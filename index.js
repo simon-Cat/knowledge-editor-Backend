@@ -22,6 +22,11 @@ const app = express();
 
 app.use(function (req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', ['POST', 'GET', 'DELETE']);
+  res.header('Access-Control-Allow-Headers', [
+    'Content-Type',
+    'Content-Length',
+  ]);
   next();
 });
 
@@ -32,7 +37,7 @@ app.get('/', (req, res) => {
 });
 
 // обработка post-запроса по url - "/"
-app.post('/', function (req, res) {
+app.delete('/', function (req, res) {
   // переменная для хранения данных
   // от клиента
   let chunked = '';
@@ -66,6 +71,42 @@ app.post('/', function (req, res) {
     // отправляем клиенту
     // обновленные данные базы знаний
     res.send(baseOfKnowledge);
+  });
+});
+
+app.post('/', function (req, res) {
+  console.log('post');
+  // переменная для хранения данных
+  // от клиента
+  let chunked = '';
+  // ждем, когда данные придут
+  req.on('data', (chunk) => {
+    chunked += chunk;
+  });
+  // данные пришли
+  req.on('end', () => {
+    // получаем новую базу знаний
+    // в формате объекта js
+    const newBaseOfKnowledge = JSON.parse(chunked);
+
+    // добавляем новый элемент
+    // в базу знаний
+    baseOfKnowledge.push(newBaseOfKnowledge);
+
+    // создаем копию всей базы знаний
+    // переводим в фромат JSON
+    const copyOfBaseOfKnowedge = JSON.stringify(baseOfKnowledge);
+
+    // записываем новые данные в файл с базой знаний
+    fs.writeFile('./baseOfKnowledge.json', copyOfBaseOfKnowedge, (err) => {
+      if (err) {
+        console.log(err.message);
+      }
+
+      // отправляем клиенту
+      // обновленные данные базы знаний
+      res.send(baseOfKnowledge);
+    });
   });
 });
 
