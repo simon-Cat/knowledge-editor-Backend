@@ -22,7 +22,12 @@ const app = express();
 
 app.use(function (req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', ['POST', 'GET', 'DELETE']);
+  res.header('Access-Control-Allow-Methods', [
+    'POST',
+    'GET',
+    'DELETE',
+    'PATCH',
+  ]);
   res.header('Access-Control-Allow-Headers', [
     'Content-Type',
     'Content-Length',
@@ -75,7 +80,6 @@ app.delete('/', function (req, res) {
 });
 
 app.post('/', function (req, res) {
-  console.log('post');
   // переменная для хранения данных
   // от клиента
   let chunked = '';
@@ -92,6 +96,47 @@ app.post('/', function (req, res) {
     // добавляем новый элемент
     // в базу знаний
     baseOfKnowledge.push(newBaseOfKnowledge);
+
+    // создаем копию всей базы знаний
+    // переводим в фромат JSON
+    const copyOfBaseOfKnowedge = JSON.stringify(baseOfKnowledge);
+
+    // записываем новые данные в файл с базой знаний
+    fs.writeFile('./baseOfKnowledge.json', copyOfBaseOfKnowedge, (err) => {
+      if (err) {
+        console.log(err.message);
+      }
+
+      // отправляем клиенту
+      // обновленные данные базы знаний
+      res.send(baseOfKnowledge);
+    });
+  });
+});
+
+app.patch('/', function (req, res) {
+  // переменная для хранения данных
+  // от клиента
+  let chunked = '';
+  // // ждем, когда данные придут
+  req.on('data', (chunk) => {
+    chunked += chunk;
+  });
+  // // данные пришли
+  req.on('end', () => {
+    // получаем обновление для определенной базы знаний
+    // в формате объекта js
+    const newBaseOfKnowledge = JSON.parse(chunked);
+
+    // находим индекс обновляемого
+    // элемента базы знаний
+    const index = baseOfKnowledge.findIndex(
+      (element) => element.id === newBaseOfKnowledge.id
+    );
+
+    // обновляем элемент
+    // базы знаний по индексу index
+    baseOfKnowledge[index] = newBaseOfKnowledge;
 
     // создаем копию всей базы знаний
     // переводим в фромат JSON
